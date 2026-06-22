@@ -13,9 +13,10 @@ export type RoleMatch = {
 
 type RoleResultPanelProps = {
   results: RoleMatch[];
+  selectedSurveyTitle: string | null;
 };
 
-export function RoleResultPanel({ results }: RoleResultPanelProps) {
+export function RoleResultPanel({ results, selectedSurveyTitle }: RoleResultPanelProps) {
   const { showToast } = useAppShell();
 
   if (results.length === 0) {
@@ -23,10 +24,12 @@ export function RoleResultPanel({ results }: RoleResultPanelProps) {
       <section className="rounded-[2rem] border border-dashed border-[#DCD6FF] bg-[#FBFAFF] p-7 text-center">
         <Sparkles className="mx-auto text-[#6C5CE7]" size={28} />
         <h2 className="mt-3 text-xl font-black text-[#111827]">
-          정밀 설문을 완료하면 결과가 표시됩니다.
+          {selectedSurveyTitle
+            ? `${selectedSurveyTitle}를 완료하면 결과가 표시됩니다.`
+            : "검사지를 선택하면 결과 영역이 준비됩니다."}
         </h2>
         <p className="mt-2 text-sm font-semibold text-[#6B7280]">
-          20문항을 모두 답하면 TOP 3 직무, 추천 국가, 기업 후보가 연결됩니다.
+          모든 문항을 OMR 답안지에 체크하면 TOP 3 직무와 추천 국가, 기업 후보가 연결됩니다.
         </p>
       </section>
     );

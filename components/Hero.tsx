@@ -37,8 +37,10 @@ export function Hero({
             국경을 넘어,
             <br />
             당신의{" "}
-            <span className="text-[#6C5CE7]">가능성</span>
-            을 연결합니다
+            <span className="whitespace-nowrap">
+              <span className="text-[#6C5CE7]">가능성</span>을
+            </span>{" "}
+            연결합니다
           </h1>
           <p className="mt-6 max-w-xl text-lg leading-8 text-[#4B5563]">
             AI 기반 분석과 글로벌 네트워크로 당신에게 딱 맞는 해외 커리어를 설계해 드립니다.

@@ -10,8 +10,11 @@ import {
   axisLabels,
   roleProfiles,
   roleSurveyQuestions,
+  roleSurveyTypes,
+  RoleSurveyTypeKey,
   surveyAxes,
   SurveyAxis,
+  SurveyQuestion,
 } from "@/data/roleSurvey";
 
 const popupStorageKey = "careerCopilotRolePopupSeen";
@@ -26,10 +29,10 @@ const emptyScores = (): Record<SurveyAxis, number> =>
     {} as Record<SurveyAxis, number>,
   );
 
-function calculateResults(answers: Record<string, number>): RoleMatch[] {
+function calculateResults(answers: Record<string, number>, questions: SurveyQuestion[]): RoleMatch[] {
   const scores = emptyScores();
 
-  roleSurveyQuestions.forEach((question) => {
+  questions.forEach((question) => {
     const answer = answers[question.id] ?? 0;
     scores[question.axis] += answer * question.weight;
   });
@@ -56,6 +59,7 @@ function calculateResults(answers: Record<string, number>): RoleMatch[] {
 
 export function RoleSurveyPage() {
   const { showToast } = useAppShell();
+  const [selectedSurveyKey, setSelectedSurveyKey] = useState<RoleSurveyTypeKey | null>(null);
   const [answers, setAnswers] = useState<Record<string, number>>({});
   const [results, setResults] = useState<RoleMatch[]>([]);
   const [quickOpen, setQuickOpen] = useState(false);
@@ -68,28 +72,52 @@ export function RoleSurveyPage() {
     }
   }, []);
 
-  const completedCount = Object.keys(answers).length;
-  const complete = completedCount === roleSurveyQuestions.length;
+  const selectedSurvey =
+    roleSurveyTypes.find((survey) => survey.key === selectedSurveyKey) ?? null;
+
+  const selectedQuestions = useMemo(() => {
+    if (!selectedSurvey) {
+      return [];
+    }
+
+    const ids = new Set(selectedSurvey.questionIds);
+    return roleSurveyQuestions.filter((question) => ids.has(question.id));
+  }, [selectedSurvey]);
+
+  const completedCount = selectedQuestions.filter((question) => answers[question.id]).length;
+  const complete =
+    selectedQuestions.length > 0 && completedCount === selectedQuestions.length;
 
   const leadingAxis = useMemo(() => {
     const axisScores = emptyScores();
 
-    roleSurveyQuestions.forEach((question) => {
+    selectedQuestions.forEach((question) => {
       axisScores[question.axis] += answers[question.id] ?? 0;
     });
 
     return Object.entries(axisScores).sort((a, b) => b[1] - a[1])[0][0] as SurveyAxis;
-  }, [answers]);
+  }, [answers, selectedQuestions]);
+
+  const selectSurvey = (surveyKey: RoleSurveyTypeKey) => {
+    setSelectedSurveyKey(surveyKey);
+    setAnswers({});
+    setResults([]);
+    window.localStorage.removeItem(resultStorageKey);
+    showToast("검사지를 선택했습니다. OMR 답안지로 응답을 시작하세요.");
+  };
 
   const submitSurvey = () => {
     if (!complete) {
       return;
     }
 
-    const nextResults = calculateResults(answers);
+    const nextResults = calculateResults(answers, selectedQuestions);
     setResults(nextResults);
-    window.localStorage.setItem(resultStorageKey, JSON.stringify(nextResults));
-    showToast("정밀 직무 추천 결과가 생성되었습니다.");
+    window.localStorage.setItem(
+      resultStorageKey,
+      JSON.stringify({ survey: selectedSurveyKey, results: nextResults }),
+    );
+    showToast("검사 결과가 생성되었습니다.");
   };
 
   const resetSurvey = () => {
@@ -111,14 +139,14 @@ export function RoleSurveyPage() {
           <div className="rounded-[2rem] border border-[#E5E7EB] bg-[#FBFAFF] p-7 lg:p-10">
             <div className="inline-flex items-center gap-2 rounded-full bg-white px-4 py-2 text-sm font-black text-[#6C5CE7]">
               <Sparkles size={17} />
-              20문항 정밀 진단
+              3가지 커리어 진단
             </div>
             <h1 className="mt-6 max-w-3xl text-4xl font-black leading-tight tracking-tight text-[#111827] lg:text-6xl">
               나에게 맞는 글로벌 직무 찾기
             </h1>
             <p className="mt-5 max-w-2xl text-lg leading-8 text-[#4B5563]">
-              성향, 역량, 협업 방식, 해외 적응력을 바탕으로 지금 가장 가능성이 높은
-              직무와 국가, 기업 후보를 연결합니다.
+              먼저 검사 종류를 고른 뒤, OMR 답안지처럼 문항을 체크해 지금 가장
+              가능성이 높은 직무와 국가, 기업 후보를 연결합니다.
             </p>
             <div className="mt-7 flex flex-col gap-3 sm:flex-row">
               <button
@@ -128,7 +156,7 @@ export function RoleSurveyPage() {
                   surveyRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })
                 }
               >
-                정밀 진단 시작
+                검사 종류 선택
                 <ClipboardCheck size={18} />
               </button>
               <button
@@ -146,15 +174,23 @@ export function RoleSurveyPage() {
             </p>
             <p className="mt-4 text-5xl font-black tracking-tight text-[#6C5CE7]">
               {completedCount}
-              <span className="text-2xl text-[#6B7280]">/20</span>
+              <span className="text-2xl text-[#6B7280]">
+                /{selectedQuestions.length || "-"}
+              </span>
             </p>
             <p className="mt-3 text-sm font-semibold leading-6 text-[#6B7280]">
-              모든 문항을 완료하면 결과 버튼이 활성화됩니다.
+              검사지를 먼저 선택하고 모든 문항을 체크하면 결과 버튼이 활성화됩니다.
             </p>
             <div className="mt-6 rounded-3xl bg-[#F3F0FF] p-4">
-              <p className="text-sm font-black text-[#111827]">현재 강한 축</p>
+              <p className="text-sm font-black text-[#111827]">
+                {selectedSurvey ? "현재 강한 축" : "선택한 검사지"}
+              </p>
               <p className="mt-2 text-xl font-black text-[#6C5CE7]">
-                {completedCount > 0 ? axisLabels[leadingAxis] : "응답 대기"}
+                {selectedSurvey
+                  ? completedCount > 0
+                    ? axisLabels[leadingAxis]
+                    : "응답 대기"
+                  : "검사 선택 대기"}
               </p>
             </div>
             <button
@@ -171,13 +207,20 @@ export function RoleSurveyPage() {
 
       <div ref={surveyRef} className="mx-auto grid max-w-[1480px] gap-6 px-5 pb-12 lg:px-8">
         <RoleSurveyForm
+          selectedSurveyKey={selectedSurveyKey}
+          surveyTypes={roleSurveyTypes}
+          questions={selectedQuestions}
           answers={answers}
+          onSurveySelect={selectSurvey}
           onAnswer={(questionId, score) =>
             setAnswers((current) => ({ ...current, [questionId]: score }))
           }
           onSubmit={submitSurvey}
         />
-        <RoleResultPanel results={results} />
+        <RoleResultPanel
+          results={results}
+          selectedSurveyTitle={selectedSurvey?.title ?? null}
+        />
       </div>
 
       {quickOpen ? (

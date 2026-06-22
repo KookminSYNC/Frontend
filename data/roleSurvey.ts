@@ -21,6 +21,17 @@ export type SurveyQuestion = {
   weight: number;
 };
 
+export type RoleSurveyTypeKey = "role-fit" | "global-fit" | "skill-fit";
+
+export type RoleSurveyType = {
+  key: RoleSurveyTypeKey;
+  eyebrow: string;
+  title: string;
+  description: string;
+  duration: string;
+  questionIds: string[];
+};
+
 export type QuickQuestion = {
   id: string;
   title: string;
@@ -240,6 +251,63 @@ export const roleSurveyQuestions: SurveyQuestion[] = [
     description: "제품, 사업, 팀 리딩 성향에 대한 문항입니다.",
     axis: "leadership",
     weight: 1.1,
+  },
+];
+
+export const roleSurveyTypes: RoleSurveyType[] = [
+  {
+    key: "role-fit",
+    eyebrow: "TEST 01",
+    title: "직무 적합도 검사",
+    description: "성향, 업무 방식, 협업 스타일을 종합해 가장 맞는 글로벌 직무를 찾습니다.",
+    duration: "20문항 · 약 5분",
+    questionIds: roleSurveyQuestions.map((question) => question.id),
+  },
+  {
+    key: "global-fit",
+    eyebrow: "TEST 02",
+    title: "글로벌 근무 성향 검사",
+    description: "언어, 문화 적응, 해외 팀 협업, 커뮤니케이션 강점을 중심으로 진단합니다.",
+    duration: "12문항 · 약 3분",
+    questionIds: [
+      "q3",
+      "q5",
+      "q9",
+      "q10",
+      "q13",
+      "q15",
+      "q19",
+      "q20",
+      "q1",
+      "q4",
+      "q8",
+      "q11",
+    ],
+  },
+  {
+    key: "skill-fit",
+    eyebrow: "TEST 03",
+    title: "실무 역량 진단",
+    description: "분석, 제작, 인프라, 보안, 연구 역량을 기준으로 실전 준비 방향을 확인합니다.",
+    duration: "16문항 · 약 4분",
+    questionIds: [
+      "q1",
+      "q2",
+      "q6",
+      "q7",
+      "q8",
+      "q11",
+      "q12",
+      "q16",
+      "q17",
+      "q18",
+      "q3",
+      "q4",
+      "q13",
+      "q14",
+      "q15",
+      "q20",
+    ],
   },
 ];
 
